@@ -1,0 +1,49 @@
+// Prototype rules for Downtrace Atlas, Standard Firestore.
+// /sites/{siteId}: shared team sites; ID uses letters, digits, '_' or '-', max 80.
+// Required fields: name string 1..120; country string 0..80;
+// lat number -90..90; lng number -180..180;
+// type enum Client/Potential client; status enum Researching/Shortlisted/Monitoring;
+// priority enum Standard/High; notes string 0..3000; demo boolean;
+// revision integer 1..1,000,000,000; createdAt timestamp immutable;
+// updatedAt timestamp set to request.time on each write.
+// No user profiles, access roles, personal identities, or nested collections.
+// The single shared Auth UID identifies the atlas team; other Auth users are denied.
+// Client reads /sites with limit(1001); filters run locally.
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAuthenticated() { return request.auth != null; }
+    function isOwner(uid) { return isAuthenticated() && request.auth.uid == uid; }
+    function isAtlasMember() { return isOwner('downtrace-atlas-shared'); }
+    function isValidSite(data) {
+      let fields = ['name','country','lat','lng','type','status','priority','notes','demo','revision','createdAt','updatedAt'];
+      return data.keys().hasAll(fields) && data.keys().hasOnly(fields)
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 120
+        && data.country is string && data.country.size() <= 80
+        && data.lat is number && data.lat >= -90 && data.lat <= 90
+        && data.lng is number && data.lng >= -180 && data.lng <= 180
+        && data.type in ['Client','Potential client']
+        && data.status in ['Researching','Shortlisted','Monitoring']
+        && data.priority in ['Standard','High']
+        && data.notes is string && data.notes.size() <= 3000
+        && data.demo is bool
+        && data.revision is int && data.revision >= 1 && data.revision <= 1000000000
+        && data.createdAt is timestamp && data.updatedAt is timestamp
+        && data.updatedAt == request.time;
+    }
+    match /sites/{siteId} {
+      allow read: if isAtlasMember();
+      allow create: if isAtlasMember()
+        && siteId.matches('[A-Za-z0-9_-]{1,80}')
+        && isValidSite(request.resource.data)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.revision == 1;
+      allow update: if isAtlasMember()
+        && isValidSite(request.resource.data)
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.revision == resource.data.revision + 1;
+      allow delete: if isAtlasMember();
+    }
+    match /{document=**} { allow read, write: if false; }
+  }
+}

@@ -1,0 +1,6 @@
+import {ready,login,logout,onAuth} from './cloud.js';
+const gate=document.getElementById('accessGate'),workspace=document.getElementById('workspace'),error=document.getElementById('accessError'),button=document.getElementById('unlockButton');
+document.getElementById('accessForm').onsubmit=async event=>{event.preventDefault();button.disabled=true;error.textContent='';try{await login(document.getElementById('accessCode').value);document.getElementById('accessCode').value='';}catch(e){error.textContent=e.code==='auth/too-many-requests'?'Too many attempts. Please wait and try again.':e.code==='auth/network-request-failed'?'Could not connect. Check your internet connection.':'That code is incorrect, or access is unavailable.';}finally{button.disabled=false;}};
+document.getElementById('lockButton').onclick=async()=>{await logout();location.reload();};
+let mounted=false;
+try{await ready;onAuth(async user=>{gate.hidden=!!user;workspace.hidden=!user;if(!user){if(mounted)location.reload();return;}if(!mounted){mounted=true;try{await import('./app.js');}catch(e){workspace.hidden=true;gate.hidden=false;error.textContent='Could not load the atlas. Check your connection and refresh.';}}});}catch{error.textContent='Could not initialize secure access. Check your connection or browser storage settings.';}

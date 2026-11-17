@@ -1,0 +1,14 @@
+import {initializeApp} from 'https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js';
+import {getAuth,signInWithEmailAndPassword,signOut,setPersistence,browserSessionPersistence,onAuthStateChanged} from 'https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js';
+import {getFirestore,collection,query,limit,onSnapshot,doc,runTransaction,serverTimestamp} from 'https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js';
+import {firebaseConfig,sharedEmail,sharedUid} from './firebase-config.js';
+export const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
+export const ready=setPersistence(auth,browserSessionPersistence);
+export const onAuth=callback=>onAuthStateChanged(auth,user=>callback(user?.uid===sharedUid?user:null));
+export async function login(code){await ready;const result=await signInWithEmailAndPassword(auth,sharedEmail,code);if(result.user.uid!==sharedUid){await signOut(auth);throw Error('Access unavailable.');}}
+export const logout=()=>signOut(auth);
+export function watchSites(callback,error){return onSnapshot(query(collection(db,'sites'),limit(1001)),{includeMetadataChanges:true},snapshot=>{if(snapshot.size>1000){error(Error('This atlas supports up to 1,000 sites. Contact the workspace owner.'));return;}callback(snapshot.docs.map(d=>({...d.data(),id:d.id})),snapshot.metadata.fromCache,snapshot.metadata.hasPendingWrites);},error);}
+function conflict(){return Error('This site changed in another session. Close and reopen it to use the latest version.');}
+export async function saveSite(site,expected=null){const ref=doc(db,'sites',site.id);await runTransaction(db,async tx=>{const previous=await tx.get(ref);if(expected===null&&previous.exists()||expected!==null&&(!previous.exists()||previous.data().revision!==expected))throw conflict();const {id,createdAt,updatedAt,...data}=site;tx.set(ref,{...data,revision:(previous.exists()?previous.data().revision:0)+1,createdAt:previous.exists()?previous.data().createdAt:serverTimestamp(),updatedAt:serverTimestamp()});});}
+export async function removeSiteCloud(site){const ref=doc(db,'sites',site.id);await runTransaction(db,async tx=>{const previous=await tx.get(ref);if(!previous.exists())throw Error('This site was already removed.');if(previous.data().revision!==site.revision)throw conflict();tx.delete(ref);});}
+export async function importSites(incoming){if(incoming.length>200)throw Error('Import up to 200 sites at a time.');await runTransaction(db,async tx=>{const refs=incoming.map(s=>doc(db,'sites',s.id));const old=await Promise.all(refs.map(r=>tx.get(r)));if(old.some(d=>d.exists()))throw Error('One or more imported IDs already exist.');incoming.forEach(({id,revision,createdAt,updatedAt,...data},i)=>tx.set(refs[i],{...data,revision:1,createdAt:serverTimestamp(),updatedAt:serverTimestamp()}));});}
