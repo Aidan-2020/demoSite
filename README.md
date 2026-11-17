@@ -27,3 +27,11 @@ The current Sites URL retains its existing private ChatGPT access boundary. GitH
 Leaflet, Firebase SDKs, and fonts load from public CDNs. Preserve OpenStreetMap attribution and follow https://operations.osmfoundation.org/policies/tiles/ . Select an appropriate tile provider before scaling traffic.
 
 Validation covered unauthenticated denial, signed-in create/update/delete, live updates between two independent clients, invalid coordinates/notes/types/extra fields, immutable timestamps, and stale-edit protection. Browser UI verification supplements these database checks.
+
+## Aidan's room — experimental 3D scene
+
+Open Aidan's room in the 3D SCENES sidebar or use #aidans-room in the URL. Three.js loads only when the scene opens. First-person mode supports WASD/arrow keys, Q/E vertical movement, Shift for speed, pointer-lock mouse look, and drag-to-look fallback. On-screen movement buttons support touch. Orbit, Reset view, speed selection, and fullscreen are available. Movement has no physics or wall collisions.
+
+The source is an instant-NGP OBJ with baked vertex colors, not a live NeRF renderer. Its coordinate axes were aligned to the capture cameras; the browser copy crops to the camera area, drops disconnected components smaller than 100 triangles, and clusters nearby vertices. Holes, coarse surfaces, and floaters remain from the input mesh. Originals are preserved. A later cleaner mesh or Gaussian splat can replace this preview. A demonstration pin in central Baltimore (39.2904, -76.6122) links to the scene through sceneId: aidans-room. This pin is deliberately unrelated to the scan's actual location. Site edits and GeoJSON exports/imports preserve this association.
+
+The public GitHub asset is AES-256-GCM ciphertext. Its random key and IV are stored in /scenes/aidans-room, readable only by the shared atlas account; client writes to this record are denied. The viewer checks the decrypted GLB's SHA-256 before parsing. The room's raw GLB, NeRF snapshot, source photos, and decryption key are excluded from the public repository. Authorized viewers can still copy what they can view. Changing the shared login code does not revoke asset keys already downloaded; rotating this asset requires re-encryption and updating its metadata.

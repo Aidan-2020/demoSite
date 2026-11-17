@@ -17,7 +17,7 @@ service cloud.firestore {
     function isAtlasMember() { return isOwner('downtrace-atlas-shared'); }
     function isValidSite(data) {
       let fields = ['name','country','lat','lng','type','status','priority','notes','demo','revision','createdAt','updatedAt'];
-      return data.keys().hasAll(fields) && data.keys().hasOnly(fields)
+      return data.keys().hasAll(fields) && data.keys().hasOnly(fields.concat(['sceneId']))
         && data.name is string && data.name.size() > 0 && data.name.size() <= 120
         && data.country is string && data.country.size() <= 80
         && data.lat is number && data.lat >= -90 && data.lat <= 90
@@ -27,6 +27,7 @@ service cloud.firestore {
         && data.priority in ['Standard','High']
         && data.notes is string && data.notes.size() <= 3000
         && data.demo is bool
+        && (!('sceneId' in data) || data.sceneId == 'aidans-room')
         && data.revision is int && data.revision >= 1 && data.revision <= 1000000000
         && data.createdAt is timestamp && data.updatedAt is timestamp
         && data.updatedAt == request.time;
@@ -43,6 +44,12 @@ service cloud.firestore {
         && request.resource.data.createdAt == resource.data.createdAt
         && request.resource.data.revision == resource.data.revision + 1;
       allow delete: if isAtlasMember();
+    }
+    // Encrypted room asset metadata, including its decryption key, is readable
+    // only by the atlas account. Only project administrators can provision it.
+    match /scenes/aidans-room {
+      allow read: if isAtlasMember();
+      allow write: if false;
     }
     match /{document=**} { allow read, write: if false; }
   }
