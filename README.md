@@ -10,6 +10,16 @@ Imports add up to 200 GeoJSON Point features at a time; existing sites are kept.
 
 ## Hosting
 
+### Company-server mode
+
+The sign-in screen also offers **Connect to company server**. With an SSH tunnel on `127.0.0.1:8765` and the server's separate access token, this mode reads and writes site names, coordinates, notes and scene references on the company server. The Firebase module is not initialized in this mode. Its offline Natural Earth basemap makes no location-specific tile requests. Leaflet, Three.js and their dependencies are vendored locally; fonts use system fallbacks.
+
+Each pin has **Private 3D twin** and **Copy pin ID**. The twin link opens a server-hosted viewer in a separate tab; it does not upload assets to GitHub or Firebase. The viewer asks for the server token separately. Company-mode links use the pin's registered scene ID; demo-mode links use its pin ID. An unregistered pin has no private twin until its model is attached on the server.
+
+The companion Python server package is delivered separately. It contains a local JSON store, authenticated API, private mesh viewer, and an `add_model.py --site-id PIN_ID` command that copies a model within the server and attaches it to the pin. Python 3.12+ is sufficient. This edition supports self-contained uncompressed GLBs, not Gaussian PLY/splats yet. Keep real records in company mode unless external storage is approved. Never put the server token or private assets in this repository.
+
+The server binds only to loopback, requires a random bearer token for site APIs and model downloads, and allows CORS from `https://aidan-2020.github.io`. Everyone with the token and server connectivity has equal editing access. The token remains in browser tab session storage and is cleared by Disconnect. Modern browsers may require local-network permission; managed browser and SSH policies must be tested with IT. The publicly hosted frontend is still trusted code with access to data/token in the browser; server storage alone does not create isolation from whoever can change that frontend. Authorized browsers receive real data/model bytes for display and can save them.
+
 The GitHub repository serves the browser files from its main branch root. No build is needed for GitHub Pages. In this Sites source checkout, node scripts/build.mjs generates both a Sites Worker and the pages/ static folder. The GitHub Pages and Sites versions use the same Firestore database in downtrace-atlas.
 
 The login screen hides the map until Firebase sign-in succeeds. Application code and public Firebase configuration can be downloaded, as with any static site; Firestore rules enforce access to the location data. The access code is not bundled. Firebase Authentication verifies it as the password of the single shared app identity; this is separate from the owner's Google account and CLI login. The shared identity has no personal mailbox and is not used to send email. Everyone using the code has the same edit permissions. Individual identity, attribution, and access revocation require individual accounts in a later version.
@@ -24,7 +34,7 @@ The current Sites URL retains its existing private ChatGPT access boundary. GitH
 
 ## Map and validation
 
-Leaflet, Firebase SDKs, and fonts load from public CDNs. Preserve OpenStreetMap attribution and follow https://operations.osmfoundation.org/policies/tiles/ . Select an appropriate tile provider before scaling traffic.
+Leaflet and Three.js are vendored; demo-mode Firebase SDKs load from Google's CDN. Demo mode uses OpenStreetMap tiles. Preserve attribution and follow https://operations.osmfoundation.org/policies/tiles/ . Select an appropriate tile provider before scaling traffic. Company mode uses the offline country overview instead. Vendored licenses are under vendor/.
 
 Validation covered unauthenticated denial, signed-in create/update/delete, live updates between two independent clients, invalid coordinates/notes/types/extra fields, immutable timestamps, and stale-edit protection. Browser UI verification supplements these database checks.
 
