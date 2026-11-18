@@ -1,0 +1,16 @@
+{
+  "name": "Aidan's room",
+  "format": "ply",
+  "compression": "gzip",
+  "bytes": 139954875,
+  "downloadBytes": 116890764,
+  "splats": 564328,
+  "iv": "vfAOFrJCtiGrJKoo",
+  "sha256": "b69471aaa802bcacde1ec0dd3e4a62d7aa083e74f4306ee40350afaa7f33c8d6",
+  "assetParts": [
+    "assets/aidans-room-splat-b69471aaa802.0.bin",
+    "assets/aidans-room-splat-b69471aaa802.1.bin",
+    "assets/aidans-room-splat-b69471aaa802.2.bin"
+  ],
+  "flipY": false
+}
